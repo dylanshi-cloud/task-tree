@@ -115,7 +115,7 @@ class GeneratorTest(unittest.TestCase):
     def test_no_broken_wiki_links(self):
         self.assertEqual(run(self.tree, self.vault, self.history).returncode, 0)
         files = [p for p in self.vault.rglob("*") if p.is_file()]
-        full = {str(p.relative_to(self.vault)).rsplit(".", 1)[0] for p in files}
+        full = {p.relative_to(self.vault).as_posix().rsplit(".", 1)[0] for p in files}
         stems = {p.stem for p in files}
         names = {p.name for p in files}
         broken = []
