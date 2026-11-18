@@ -4,14 +4,15 @@
 
 Most agent workflows lose the *why* after the first few turns. `task-tree` keeps a single JSON source for the mission, branches, acceptance criteria, decisions, and calibrations, then renders it as a read-only Obsidian mirror: a canvas, linked notes, a calibration ledger, and a growth chart that shows what actually moved.
 
-> 中文说明见 [README.zh-CN.md](README.zh-CN.md)。v0.1 UI strings are Chinese; English UI is on the roadmap.
+> 中文说明见 [README.zh-CN.md](README.zh-CN.md)。v0.1.x UI strings are Chinese; English UI is on the roadmap.
 
 ## Why it exists
 
+- **Algorithm first.** Every task runs 去愚 → 删除 → 优化 → 加速 → 自动化 in order; deletions and validated automation are recorded in the tree.
 - **Intent first.** The skill asks *why / for whom / what counts as success / what is out of scope* before splitting work.
 - **One source of truth.** `tree.json` is the only state. Notes and canvases are generated, never hand-edited.
 - **Calibration instead of overwrite.** Goal changes append to `calibrations`; stale numbers are caught by `drift_checks`.
-- **Growth is visible.** Every run records a snapshot. The growth page shows new nodes, state transitions, who did what, and a stacked-bar chart of the last 24 runs.
+- **Growth is visible.** Every run records a snapshot. The root page shows new nodes, state transitions, who did what, and a stacked-bar chart of the last 24 runs.
 - **Collaboration is explicit.** `roles` and per-node `owner` produce a “who is doing what / what needs your decision / what is blocked” view.
 - **Low overhead.** One JSON file and one generator run per round. Small tasks use a one-branch, ≤3-node tree.
 
@@ -21,16 +22,14 @@ Most agent workflows lose the *why* after the first few turns. `task-tree` keeps
 <vault>/50 任务树/
 ├── 任务总览.md                  # cross-task index
 └── <program>/
-    ├── <title>.md               # root: mission, users, success, current, collaboration
-    ├── 分支/                     # one page per branch
-    ├── 节点/                     # one page per deliverable
-    ├── <title> 口径校准.md        # current canonical values + calibration history + drift scan
-    ├── <title> 演进时间线.md      # decisions and daily log
-    ├── <title> 生长.md + .svg     # this round's delta + growth chart
+    ├── <title>.md               # root: mission, success, current, this-round change, collaboration, algorithm gate
+    ├── 分支/                     # one page per branch; node sections inline
+    ├── <title> 演进.md           # calibrations, decisions, and process log
+    ├── <title> 生长.svg          # growth chart
     └── <title>.canvas           # visual map for Obsidian
 ```
 
-Each node page carries: why it exists, its success criterion, next action, evidence, linked decisions, lessons, and a 🆕/🔄 badge when it changed this round.
+Each node is a section inside its branch page, carrying why it exists, its success criterion, next action, evidence, linked decisions, lessons, and a 🆕/🔄 badge when it changed this round. A one-branch, three-node task produces five files total.
 
 ## Install
 
@@ -91,7 +90,7 @@ python3 scripts/build_task_tree.py \
   --vault /tmp/task-tree-test --no-open
 ```
 
-Expected: 13 notes, 1 canvas, 1 SVG.
+Expected: 5 Markdown files (root, 3 branch pages, history), 1 canvas, 1 SVG.
 
 A lightweight one-branch example:
 
@@ -101,6 +100,8 @@ python3 scripts/build_task_tree.py \
   --vault /tmp/task-tree-example \
   --history /tmp/task-tree-example-history.json --no-open
 ```
+
+Expected: 5 files total (root, one branch page, history, canvas, SVG).
 
 ## Data model
 
@@ -119,13 +120,15 @@ Core fields:
 | `decisions` | Decisions with ids, dates, status |
 | `calibrations` | Goal/approach/scope changes; append-only |
 | `drift_checks` | Canonical values and stale patterns to scan |
+| `deleted` | What was removed and why (the delete pass) |
+| `automation` | Flows that were manually validated before being automated |
 | `current` | The one thing being worked on now |
 
 States: `done | partial | open | decide | blocked | later`.
 
 ## How the skill is used
 
-`SKILL.md` defines the three-step protocol:
+`SKILL.md` opens with the Algorithm gate, then defines the three-step protocol:
 
 1. **Clarify intent** until you can restate it without the user changing keywords.
 2. **Split into root → branches → nodes**, each node independently acceptable.
@@ -166,10 +169,10 @@ evals/                   # realistic prompts for skill evaluation
 
 ## Status
 
-v0.1.1 — core loop and release scaffolding are complete; the plugin and
+v0.1.2 — Algorithm-first skill: `CLAUDE.md` and `SKILL.md` open with the
+five-step gate, the skill document is consolidated, and the plugin and
 marketplace manifests pass `claude plugin validate`. Known gaps: English UI
-strings, demo screenshots/GIF, and the first public repository push. See
-[CHANGELOG.md](CHANGELOG.md).
+strings and demo screenshots/GIF. See [CHANGELOG.md](CHANGELOG.md).
 
 ## License
 

@@ -12,6 +12,7 @@ from pathlib import Path
 SKILL = Path(__file__).resolve().parents[1]
 SCRIPT = SKILL / "scripts" / "build_task_tree.py"
 TEMPLATE = SKILL / "templates" / "tree.json"
+EXAMPLE = SKILL / "examples" / "small-task.json"
 
 
 def run(tree, vault, history, *extra):
@@ -41,16 +42,26 @@ class GeneratorTest(unittest.TestCase):
     def tearDown(self):
         self.tmp.cleanup()
 
-    def test_generates_notes_canvas_and_svg(self):
+    def test_generates_root_branches_history_canvas_and_svg(self):
         r = run(self.tree, self.vault, self.history)
         self.assertEqual(r.returncode, 0, r.stderr)
         self.assertTrue((self.out / f'{self.cfg["title"]}.md').exists())
-        self.assertTrue(list(self.out.glob("*.canvas")))
-        self.assertTrue(list(self.out.glob("*.svg")))
+        self.assertTrue((self.out / f'{self.cfg["title"]} 演进.md').exists())
+        self.assertFalse((self.out / "节点").exists())
+        self.assertEqual(len(list(self.out.glob("* 生长.md"))), 0)
+        self.assertEqual(len(list(self.out.glob("* 口径校准.md"))), 0)
+        self.assertEqual(len(list(self.out.glob("* 演进时间线.md"))), 0)
         canvas = json.loads(next(self.out.glob("*.canvas")).read_text(encoding="utf-8"))
         ids = {n["id"] for n in canvas["nodes"]}
-        self.assertTrue({"mission", "change", "growth", "home"} <= ids)
-        self.assertEqual(len(canvas["edges"]), 6)
+        self.assertTrue({"mission", "change", "home", "history", "algorithm"} <= ids)
+        self.assertEqual(len(canvas["edges"]), 7)
+
+    def test_small_task_generates_five_files(self):
+        r = run(EXAMPLE, self.vault, self.history)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        out = self.vault / "50 任务树" / "newsletter-launch"
+        files = [p for p in out.rglob("*") if p.is_file()]
+        self.assertEqual(len(files), 5, sorted(p.name for p in files))
 
     def test_second_identical_run_does_not_append_snapshot(self):
         self.assertEqual(run(self.tree, self.vault, self.history).returncode, 0)
@@ -70,11 +81,31 @@ class GeneratorTest(unittest.TestCase):
         self.assertEqual(r.returncode, 0, r.stderr)
         snaps = json.loads(self.history.read_text(encoding="utf-8"))["snapshots"]
         self.assertEqual(len(snaps), 2)
-        node = next(self.out.glob("节点/B2 *.md")).read_text(encoding="utf-8")
-        self.assertIn("🔄 本轮状态", node)
-        growth = next(self.out.glob("* 生长.md")).read_text(encoding="utf-8")
-        self.assertIn("未开始 → 推进中", growth)
-        self.assertIn("本轮协同", growth)
+        branch = next(self.out.glob("分支/B *.md")).read_text(encoding="utf-8")
+        self.assertIn("🔄 本轮状态", branch)
+        self.assertIn("### B2 域名与部署", branch)
+        root = (self.out / f'{self.cfg["title"]}.md').read_text(encoding="utf-8")
+        self.assertIn("未开始 → 推进中", root)
+        self.assertIn("协同（这一轮）", root)
+
+    def test_root_shows_algorithm_gate(self):
+        r = run(self.tree, self.vault, self.history)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        root = (self.out / f'{self.cfg["title"]}.md').read_text(encoding="utf-8")
+        self.assertIn("## 算法关（删除与自动化）", root)
+        self.assertIn("删除 2 项", root)
+        self.assertIn("独立「关于」页", root)
+        self.assertIn("还没有自动化项", root)
+
+    def test_algorithm_gate_empty_state(self):
+        self.cfg.pop("deleted", None)
+        self.cfg.pop("automation", None)
+        self.tree.write_text(json.dumps(self.cfg, ensure_ascii=False, indent=1), encoding="utf-8")
+        r = run(self.tree, self.vault, self.history)
+        self.assertEqual(r.returncode, 0, r.stderr)
+        root = (self.out / f'{self.cfg["title"]}.md').read_text(encoding="utf-8")
+        self.assertIn("还没有删除记录", root)
+        self.assertIn("删除 0 项", root)
 
     def test_duplicate_node_id_is_rejected(self):
         self.cfg["nodes"].append(dict(self.cfg["nodes"][0]))

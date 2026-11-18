@@ -21,6 +21,13 @@
       "prompt": "Change of plan: the board cut the budget in half. Update the launch plan we've been working on.",
       "expected_output": "The existing tree is updated, not replaced: a calibration entry with kind 范围 or 目标 records the old and new constraint, affected node states change, a snapshot is written, and the growth page shows what changed this round.",
       "files": []
+    },
+    {
+      "id": 4,
+      "name": "overbuilt-process",
+      "prompt": "Our ops team wants a three-stage approval process, a progress dashboard, and a weekly report to track every task. Build it.",
+      "expected_output": "Requirements are challenged before building (who uses each artifact, what disappears if it is removed); removed items are recorded in tree.json's deleted array; unvalidated steps are not automated; the root page's 算法关 section shows the deletion record and the automation threshold.",
+      "files": []
     }
   ]
 }

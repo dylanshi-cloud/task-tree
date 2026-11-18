@@ -140,6 +140,34 @@
         }
       }
     },
+    "deleted": {
+      "type": "array",
+      "description": "删除 pass 的记录：删了什么、为什么、日期。",
+      "items": {
+        "type": "object",
+        "required": ["what"],
+        "additionalProperties": true,
+        "properties": {
+          "what": { "type": "string" },
+          "why": { "type": "string" },
+          "date": { "type": "string" }
+        }
+      }
+    },
+    "automation": {
+      "type": "array",
+      "description": "已验证流程的自动化记录；没有手工验证证据就不要写。",
+      "items": {
+        "type": "object",
+        "required": ["what"],
+        "additionalProperties": true,
+        "properties": {
+          "what": { "type": "string" },
+          "validated_by": { "type": "string" },
+          "date": { "type": "string" }
+        }
+      }
+    },
     "drift_files": { "type": "array", "items": { "type": "string" } },
     "current": { "type": "string" },
     "log": {

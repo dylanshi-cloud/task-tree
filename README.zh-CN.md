@@ -2,6 +2,8 @@
 
 「任务树 + 演进路径 = 可溯源的活文档」的可移植实现。
 
+开工先过五步算法：**去愚 → 删除 → 优化 → 加速 → 自动化**；再用任务树推进。
+
 ## 目录里有什么
 
 ```
@@ -44,7 +46,7 @@ task-tree/
      --vault /tmp/task-tree-test \
      --history /tmp/task-tree-test-history.json --no-open
    ```
-   应生成 13 篇笔记 + 1 个画布 + 1 个生长 SVG。用 Obsidian 打开 `/tmp/task-tree-test` 检查画布。
+   应生成 5 篇笔记（根页、3 个分支页、演进页）+ 1 个画布 + 1 个生长 SVG。用 Obsidian 打开 `/tmp/task-tree-test` 检查画布。
    跑测试：`cd ~/.claude/skills/task-tree && python3 -m unittest discover -s tests -v`。
 
 > 换机器时只需要这个文件夹；不需要 V11 项目、不需要记忆库、不需要任何本机脚本。
@@ -73,10 +75,10 @@ Claude 看到多步骤任务时会自动调用本 skill；也可以直接说「�
 1. 在任务工作目录建 `.task-tree/<任务slug>/tree.json`，从 `templates/tree.json` 复制后改写；单任务项目可省略 slug。
 2. 把 `program`、`title`、`mission` 先写对；`nodes` 可以后补。
 3. 生成一次，确认画布与根页结构。
-4. 之后每轮改 `tree.json` → 重跑生成器；有变化时「生长页」会列出本轮新增/迁移，并追加一条快照。
+4. 之后每轮改 `tree.json` → 重跑生成器；有变化时根页「本轮变化与生长」会列出新增/迁移，并追加一条快照。
    生成器会自动在 Obsidian 打开本任务画布，并打印任务目录与 `obsidian://` 链接；不想自动打开就加 `--no-open`。
 5. 历史快照默认落在 `tree.json` 同目录的 `<名字>_history.json`；想换位置用 `--history`。
-6. 每个任务的生成器都会更新 `<库>/50 任务树/任务总览.md`，跨任务先看总览再进生长页。
+6. 每个任务的生成器都会更新 `<库>/50 任务树/任务总览.md`，跨任务先看总览再进根页或演进页。
 
 ## 与 V11 专用生成器的关系
 

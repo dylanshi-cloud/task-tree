@@ -7,12 +7,10 @@
 
 输出:
     <vault>/50 任务树/<program>/
-      <title>.md          根页：为什么做 / 给谁用 / 什么算成功 / 当前态势
-      分支/<id> <name>.md
-      节点/<id> <title>.md
-      <title> 口径校准.md
-      <title> 演进时间线.md
-      <title> 生长.md + <title> 生长.svg
+      <title>.md          根页：使命 / 成功 / 当前 / 本轮变化 / 协同 / 算法关
+      分支/<id> <name>.md 分支页：节点以内联小节呈现
+      <title> 演进.md      校准、拍板与过程日志
+      <title> 生长.svg
       <title>.canvas
 
 原则: tree.json 是唯一真相；本脚本只读它，页面是只读镜像。
@@ -211,11 +209,10 @@ def open_in_obsidian(vault_root, rel_path):
 
 
 class Tree:
-    def __init__(self, cfg, vault, dry=False, history=None, diff=None, history_path=None):
+    def __init__(self, cfg, vault, dry=False, history=None, diff=None):
         self.cfg = cfg
         self.history = history or []
         self.diff = diff or {}
-        self.history_path = history_path
         self.program = safe_program(cfg.get("program"))
         self.title = cfg.get("title") or f"{self.program} 任务树"
         self.mission = cfg.get("mission") or {}
@@ -236,14 +233,14 @@ class Tree:
         for s in self.mission.get("success", []):
             for nid in s.get("nodes", []):
                 self.serves.setdefault(nid, []).append(s["id"])
-        self.success_text = {s["id"]: s["text"] for s in self.mission.get("success", [])}
-        self.stem = {n["id"]: safe(f'{n["id"]} {n.get("title", n["id"])}') for n in self.nodes}
+        self.heading = {
+            n["id"]: f'{n["id"]} {clean(n.get("title", n["id"]), 80)}' for n in self.nodes
+        }
         self.branch_stem = {
             b: safe(f'{b} {self.branches[b].get("name", b)}') for b in self.branches
         }
         self.root_stem = safe(self.title)
-        self.calib_stem = safe(f"{self.title} 口径校准")
-        self.timeline_stem = safe(f"{self.title} 演进时间线")
+        self.history_stem = safe(f"{self.title} 演进")
         self.growth_stem = safe(f"{self.title} 生长")
         self.canvas_stem = safe(self.title)
 
@@ -275,7 +272,12 @@ class Tree:
         )
 
     def el_link(self, nid):
-        return f'[[{self.stem[nid]}|{nid}]]' if nid in self.stem else nid
+        n = self.node_by_id.get(nid)
+        if not n:
+            return nid
+        bid = n.get("branch", "")
+        target = self.branch_stem.get(bid, bid)
+        return f'[[{target}#{self.heading[nid]}|{nid}]]'
 
     def br_link(self, bid):
         return f'[[{self.branch_stem[bid]}|{bid} {self.branches[bid].get("name", bid)}]]'
@@ -292,11 +294,8 @@ class Tree:
         self.render_root()
         for bid in self.branches:
             self.render_branch(bid)
-        for n in self.nodes:
-            self.render_node(n)
-        self.render_calibration()
-        self.render_timeline()
-        self.render_growth()
+        self.render_history()
+        self.render_growth_svg()
         self.render_canvas()
         self.cleanup()
         self.update_index()
@@ -363,6 +362,11 @@ class Tree:
             for chk, hits in self.scan_drift() if hits
         )
         drift_md = ("⚠️ 发现旧口径，先改数据源再改页面：\n\n" + drift_md) if drift_md else "✅ 未发现旧口径。"
+        drift_section = f"## 口径检查\n\n{drift_md}\n" if self.checks else ""
+        cal_block = (
+            f"## 最近校准\n\n| 日期 | 类型 | 校准 | 依据 |\n|---|---|---|---|\n{cal_rows}\n\n"
+            if self.calibrations else "## 完整记录\n\n"
+        )
 
         body = self.fm(self.program, self.title, ["任务树", self.program, "根"],
                        f'mission: "{clean(self.mission.get("why"), 80)}"\n')
@@ -396,44 +400,30 @@ class Tree:
 {("```text" + chr(10) + self.current + chr(10) + "```") if self.current else "（未填写 current）"}
 
 节点 {len(self.nodes)} 项 = {' · '.join(f"{STATE_LABEL[s]} {counts[s]}" for s in STATE_LABEL)}。
-本轮变化与生长曲线见 [[{self.growth_stem}]]。
 
-## 待拍板（台账）
+## 本轮变化与生长
 
-{pending_md}
+{self.growth_changes_md()}
+
+![[{self.growth_stem}.svg]]
 
 ## 协同（这一轮）
 
 {self.roles_md()}{self.collaboration_md()}
 
-## 分支
+{self.algorithm_md()}## 分支
 
 | 分支 | 这一枝为什么存在 | 进度 | 状态 |
 |---|---|---|---|
 {chr(10).join(rows)}
 
-## 最近的目标校准
+## 待拍板（台账）
 
-| 日期 | 类型 | 校准 | 依据 |
-|---|---|---|---|
-{cal_rows}
+{pending_md}
 
-完整路径见 [[{self.calib_stem}]] 与 [[{self.timeline_stem}]]。
+{cal_block}校准、拍板与过程日志见 [[{self.history_stem}]]。
 
-## 口径检查
-
-{drift_md}
-
-## 怎么读
-
-- **根页**：使命、对象、成功判据、当前态势。
-- **分支页**：这一枝的意图、节点表、修正史、相关原话。
-- **节点页**：单个交付物的判据、证据、拍板链。
-- **校准页**：目标变过什么、为什么变。
-- **时间线**：按日期回放拍板与过程日志。
-- **生长页**：本轮新增/迁移、分支进度、最近 24 次生成的状态构成。
-- **维护**：只改 `tree.json`，再运行生成器；不手改本库。
-"""
+{drift_section}"""
         self.write(f"{self.root_stem}.md", body)
 
     def render_branch(self, bid):
@@ -442,25 +432,18 @@ class Tree:
         done = sum(1 for n in sub if n.get("state") == "done")
         st = worst([n.get("state") for n in sub])
         rows = [
-            f'| {self.el_link(n["id"])} | {cell(n.get("title"), 28)} | {STATE_LABEL.get(n.get("state"), "")} '
-            f'| {cell(n.get("judge"), 70)} | {cell(n.get("next"), 60)} |'
+            f'| [[#{self.heading[n["id"]]}\\|{n["id"]}]] | {cell(n.get("title"), 28)} '
+            f'| {STATE_LABEL.get(n.get("state"), "")} | {cell(n.get("judge"), 70)} '
+            f'| {cell(n.get("next"), 60)} |'
             for n in sub
         ]
-        linked = []
-        for n in sub:
-            for d in self.decisions_of(n):
-                if d not in linked:
-                    linked.append(d)
-        dec_md = "\n".join(
-            f'- `{d["id"]}` {d.get("date", "")} · {d.get("title", "")} · {d.get("status", "")}'
-            for d in linked
-        ) or "（暂无直接挂接的拍板。）"
         quotes = b.get("quotes") or []
         quote_md = "\n\n".join(
             (f'> {clean(q, 200)}' if isinstance(q, str) else f'> **{q.get("label", "原话")}**：{clean(q.get("text"), 180)}\n>\n> {clean(q.get("value"), 100)}')
             for q in quotes
         ) or "（暂无挂接原话。）"
-        serves = "、".join(f'{sid} {self.success_text.get(sid, "")}' for sid in b.get("serves", []))
+        serves = "、".join(b.get("serves", []))
+        details = "\n\n".join(self.node_section(n) for n in sub)
 
         body = self.fm(f"{self.program}-{bid}", f'{bid} {b.get("name", bid)}',
                        ["任务树", self.program, f"分支-{bid}", "分支"],
@@ -481,34 +464,27 @@ class Tree:
 |---|---|---|---|---|
 {chr(10).join(rows)}
 
-## 修正与拍板
+## 节点详情
 
-{dec_md}
+{details}
 
 ## 相关原话
 
 {quote_md}
-
-## 子节点
-
-{chr(10).join(f'- [[{self.stem[n["id"]]}]]' for n in sub)}
 """
         self.write(f"分支/{self.branch_stem[bid]}.md", body)
 
-    def render_node(self, n):
+    def node_section(self, n):
         nid = n["id"]
-        bid = n.get("branch", "")
         dlist = self.decisions_of(n)
-        dec_md = "\n\n".join(
-            f'### `{d["id"]}` {d.get("date", "")} · {d.get("status", "")}\n\n'
-            f'**{d.get("title", "")}**\n\n{clean(d.get("decision"), 500)}'
+        dec_md = "\n".join(
+            f'- `{d["id"]}` {d.get("date", "")} · {clean(d.get("title"), 80)} · *{d.get("status", "")}*'
             for d in dlist
         ) or "（暂无直接挂接的拍板。）"
-        ev = "\n".join(f"- `{x}`" for x in n.get("evidence", [])) or "（无）"
-        serves = "、".join(f"{sid} {self.success_text[sid]}" for sid in self.serves.get(nid, [])) or "（未挂接成功判据，需要补）"
-        why = n.get("why") or self.branches.get(bid, {}).get("why", "")
-        lessons = n.get("lessons") or []
-        lesson_md = "\n".join(f"- {clean(x, 200)}" for x in lessons) or "（无）"
+        ev = "、".join(f"`{x}`" for x in n.get("evidence", [])) or "（无）"
+        serves = "、".join(self.serves.get(nid, [])) or "（未挂接成功判据，需要补）"
+        lessons = "\n".join(f"- {clean(x, 200)}" for x in n.get("lessons") or [])
+        why = clean(n.get("why"), 300)
 
         badge = ""
         if nid in self.diff.get("added", []):
@@ -517,42 +493,30 @@ class Tree:
             old, new = self.diff["changed"][nid]
             badge = f"> 🔄 本轮状态：{STATE_LABEL.get(old, old)} → {STATE_LABEL.get(new, new)}\n\n"
 
-        body = self.fm(f"{self.program}-{nid}", f'{nid} {n.get("title", "")}',
-                       ["任务树", self.program, "节点", f"分支-{bid}"],
-                       f'branch: "{bid}"\nstate: "{n.get("state", "")}"\n')
-        body += f"""# {nid} {n.get("title", "")}
+        parts = [
+            f"### {self.heading[nid]}",
+            "",
+            badge + f"**状态**：{STATE_BADGE.get(n.get('state'), n.get('state'))} · **负责人**：{self.owner_of(n)}",
+            "",
+        ]
+        if why:
+            parts += [f"**为什么做**：{why}", ""]
+        parts += [
+            f"**成功判据**：{n.get('judge', '（未写判据）')}",
+            "",
+            f"**下一动作**：{n.get('next', '（未写）')}",
+            "",
+            f"**服务**：{serves}",
+            "",
+            f"**证据**：{ev}",
+            "",
+            f"**修正与拍板**：\n\n{dec_md}",
+        ]
+        if lessons:
+            parts += ["", f"**教训**：\n\n{lessons}"]
+        return "\n".join(parts)
 
-{badge}> 所属：{self.br_link(bid) if bid in self.branches else bid} · 根：[[{self.root_stem}]] · {STATE_BADGE.get(n.get("state"), n.get("state"))}
-
-## 为什么做
-
-{why}
-
-服务：{serves}
-
-## 成功判据
-
-{n.get("judge", "（未写判据）")}
-
-## 下一动作
-
-{n.get("next", "（未写）")}
-
-## 证据
-
-{ev}
-
-## 修正与拍板
-
-{dec_md}
-
-## 教训
-
-{lesson_md}
-"""
-        self.write(f"节点/{self.stem[nid]}.md", body)
-
-    def render_calibration(self):
+    def render_history(self):
         cur = "\n".join(f'| {c["topic"]} | {c["canonical"]} |' for c in self.checks) or "| — | 还没有口径检查 |"
         cal = "\n".join(
             f'| {c.get("date", "")} | {c.get("kind", "")} | {c.get("title", "")} | {c.get("from", "")} '
@@ -565,9 +529,25 @@ class Tree:
             + " |"
             for chk, hits in self.scan_drift()
         ) or "| — | — | 未配置检查 |"
+        decs = sorted(self.decisions.values(), key=lambda d: (d.get("date", ""), d["id"]), reverse=True)
+        dec_lines = []
+        for d in decs:
+            rel = "、".join(self.el_link(n["id"]) for n in self.nodes
+                            if d["id"] in (n.get("decision_ids") or []))
+            line = (f'- `{d["id"]}` {d.get("date", "")} · {clean(d.get("title"), 80)} '
+                    f'· *{d.get("status", "")}*')
+            dec_lines.append(line + (f" · 关联 {rel}" if rel else ""))
+        dec_md = "\n".join(dec_lines) or "（没有拍板记录。）"
+        log_md = "\n\n".join(
+            f'### {e.get("date", "")} · {e.get("title", "")}\n\n{clean(e.get("summary"), 700)}'
+            for e in self.log
+        ) or "（没有过程日志。）"
 
-        body = self.fm(f"{self.program}-calibration", f"{self.title} 口径校准", ["任务树", self.program, "校准"])
-        body += f"""# {self.title} 口径校准
+        body = self.fm(f"{self.program}-history", f"{self.title} 演进",
+                       ["任务树", self.program, "演进"])
+        body += f"""# {self.title} 演进
+
+> 校准、拍板与过程日志的完整记录。根页只保留最近几条。
 
 ## 当前口径
 
@@ -581,47 +561,21 @@ class Tree:
 |---|---|---|---|---|---|
 {cal}
 
-## 冲突扫描（实时）
+## 口径冲突扫描
 
 | 主题 | 权威值 | 检查结果 |
 |---|---|---|
 {scan}
 
-> 发现冲突时：先改 `tree.json` 或上游数据源，再重跑生成器；不要直接改页面。
-"""
-        self.write(f"{self.calib_stem}.md", body)
+## 拍板
 
-    def render_timeline(self):
-        decs = sorted(self.decisions.values(), key=lambda d: (d.get("date", ""), d["id"]), reverse=True)
-        lines, last = [], None
-        for d in decs:
-            if d.get("date") != last:
-                lines.append(f"\n### {d.get('date', '日期未知')}\n")
-                last = d.get("date")
-            rel = []
-            for n in self.nodes:
-                if d["id"] in (n.get("decision_ids") or []):
-                    rel.append(self.el_link(n["id"]))
-            lines.append(f'- `{d["id"]}` · {clean(d.get("title"), 80)} · *{d.get("status", "")}*'
-                         + ((" · 关联 " + "、".join(rel)) if rel else ""))
-        log_md = "\n\n".join(
-            f'### {e.get("date", "")} · {e.get("title", "")}\n\n{clean(e.get("summary"), 700)}'
-            for e in self.log
-        ) or "（没有过程日志。）"
-        body = self.fm(f"{self.program}-timeline", f"{self.title} 演进时间线", ["任务树", self.program, "时间线"])
-        body += f"""# {self.title} 演进时间线
-
-> 按日期倒序回放：先看拍板与修正，再看每天的交付与发现。
-
-## 拍板与修正
-
-{chr(10).join(lines) or "（没有拍板记录。）"}
+{dec_md}
 
 ## 过程日志
 
 {log_md}
 """
-        self.write(f"{self.timeline_stem}.md", body)
+        self.write(f"{self.history_stem}.md", body)
 
     def owner_of(self, n):
         return n.get("owner") or (
@@ -656,6 +610,37 @@ class Tree:
             f'| {r.get("who", "")} | {cell(r.get("does"), 90)} |' for r in self.roles
         )
         return "| 谁 | 负责 |\n|---|---|\n" + rows + "\n\n"
+
+    def algorithm_md(self):
+        deleted = self.cfg.get("deleted") or []
+        automation = self.cfg.get("automation") or []
+
+        def record(item):
+            what = clean(item.get("what"), 100)
+            why = clean(item.get("why") or item.get("validated_by"), 160)
+            date = clean(item.get("date"), 20)
+            meta = " · ".join(x for x in (date, why) if x)
+            return f"- **{what}**" + (f" — {meta}" if meta else "")
+
+        deleted_md = "\n".join(record(x) for x in deleted) or (
+            "（还没有删除记录。拆分支前先做一次删除 pass；一项都删不掉，说明要求还没变聪明。）"
+        )
+        automation_md = "\n".join(record(x) for x in automation) or (
+            "（还没有自动化项。只有手工跑过、验证稳定、且前四步完成的流程才写进来。）"
+        )
+        return f"""## 算法关（删除与自动化）
+
+本轮登记：删除 {len(deleted)} 项 · 自动化 {len(automation)} 项。先删后加；没有手工验证证据的流程不自动化。
+
+### 删除记录
+
+{deleted_md}
+
+### 自动化门槛
+
+{automation_md}
+
+"""
 
     def growth_changes_md(self, links=True):
         ref = (lambda x: self.el_link(x)) if links else (lambda x: f"`{x}`")
@@ -736,61 +721,7 @@ class Tree:
         el.append("</svg>")
         return "\n".join(el)
 
-    def render_growth(self):
-        snaps = self.history[-24:]
-        rows = []
-        for s in reversed(snaps):
-            c = s.get("counts", {})
-            rows.append(
-                f'| {s.get("ts", "")} | {sum(c.values())} | {c.get("done", 0)} | {c.get("partial", 0)} '
-                f'| {c.get("decide", 0)} | {c.get("blocked", 0)} | {c.get("open", 0)} | {c.get("later", 0)} '
-                f'| {s.get("decisions", 0)} | {s.get("calibrations", 0)} |'
-            )
-        table = "\n".join(rows) or "| — | — | — | — | — | — | — | — | — | — |"
-        brows = []
-        for bid in self.branches:
-            sub = self.by_branch.get(bid, [])
-            done = sum(1 for x in sub if x.get("state") == "done")
-            pct = round(100 * done / len(sub)) if sub else 0
-            filled = round(pct / 10)
-            brows.append(f'| {self.br_link(bid)} | {done}/{len(sub)} | {"█" * filled}{"░" * (10 - filled)} {pct}% |')
-        hist_note = f"`{self.history_path}`" if self.history_path else "（未记录路径）"
-
-        body = self.fm(f"{self.program}-growth", f"{self.title} 生长",
-                       ["任务树", self.program, "生长"])
-        body += f"""# {self.title} 生长
-
-> 每次运行生成器留一个快照，内容没变就不追加。历史源：{hist_note}
-> 本页位置：`50 任务树/{self.program}/{self.growth_stem}.md`
-
-## 本轮变化
-
-{self.growth_changes_md()}
-
-## 本轮协同
-
-{self.collaboration_md()}
-
-## 生长曲线
-
-![[{self.growth_stem}.svg]]
-
-## 分支进度
-
-| 分支 | 已定/总数 | 进度 |
-|---|---|---|
-{chr(10).join(brows)}
-
-## 快照台账
-
-| 时间 | 节点 | 已定 | 推进中 | 待拍板 | 受阻 | 未开始 | 后置 | 拍板 | 校准 |
-|---|---|---|---|---|---|---|---|---|---|
-{table}
-
-> 读法：先看「本轮变化」确认这轮动了什么，再看曲线确认整体在长还是在原地打转；
-> 只有曲线变平、且待拍板一直不下降，才说明需要重新校准目标。返回 [[{self.root_stem}]]。
-"""
-        self.write(f"{self.growth_stem}.md", body)
+    def render_growth_svg(self):
         self.write(f"{self.growth_stem}.svg", self.growth_svg())
 
     def render_canvas(self):
@@ -819,18 +750,20 @@ class Tree:
         nodes.append({"id": "change", "type": "text", "x": 1260, "y": 0, "width": 360, "height": 360,
                       "color": "3", "text": "## 本轮变化\n\n" + self.growth_changes_md(links=False)
                       + "\n\n## 协同\n\n" + self.collaboration_md(links=False)})
-        nodes.append({"id": "calib", "type": "file", "file": f"50 任务树/{self.program}/{self.calib_stem}.md",
-                      "x": 860, "y": 300, "width": 380, "height": 100, "color": "1"})
-        nodes.append({"id": "timeline", "type": "file", "file": f"50 任务树/{self.program}/{self.timeline_stem}.md",
-                      "x": 860, "y": 440, "width": 380, "height": 100, "color": "5"})
-        nodes.append({"id": "growth", "type": "file", "file": f"50 任务树/{self.program}/{self.growth_stem}.md",
-                      "x": 860, "y": 580, "width": 380, "height": 100, "color": "4"})
         nodes.append({"id": "home", "type": "file", "file": f"50 任务树/{self.program}/{self.root_stem}.md",
-                      "x": 860, "y": 720, "width": 380, "height": 100, "color": "6"})
+                      "x": 860, "y": 300, "width": 380, "height": 100, "color": "6"})
+        nodes.append({"id": "history", "type": "file", "file": f"50 任务树/{self.program}/{self.history_stem}.md",
+                      "x": 860, "y": 440, "width": 380, "height": 100, "color": "5"})
+        nodes.append({"id": "algorithm", "type": "text", "x": 1260, "y": 400, "width": 360, "height": 160,
+                      "color": "1", "text": "## 算法关\n\n"
+                      + f'- 删除 {len(self.cfg.get("deleted") or [])} 项\n'
+                      + f'- 自动化 {len(self.cfg.get("automation") or [])} 项\n\n'
+                      + "先删后加；没有手工验证证据的流程不自动化。"})
         edges += [
             {"id": "e-m-who", "fromNode": "mission", "fromSide": "bottom", "toNode": "who", "toSide": "top"},
             {"id": "e-m-success", "fromNode": "mission", "fromSide": "bottom", "toNode": "success", "toSide": "top"},
             {"id": "e-next-change", "fromNode": "next", "fromSide": "right", "toNode": "change", "toSide": "left"},
+            {"id": "e-home-history", "fromNode": "home", "fromSide": "bottom", "toNode": "history", "toSide": "top"},
         ]
         p = self.out / f"{self.canvas_stem}.canvas"
         p.parent.mkdir(parents=True, exist_ok=True)
@@ -859,29 +792,30 @@ class Tree:
             "ts": now_str(), "total": len(self.nodes), "counts": counts,
             "current": clean(self.current, 120),
             "root": f"{self.program}/{self.root_stem}.md",
-            "growth": f"{self.program}/{self.growth_stem}.md",
+            "history": f"{self.program}/{self.history_stem}.md",
         }
         atomic_write(idx, json.dumps(data, ensure_ascii=False, indent=1))
 
         rows = []
         for p in sorted(data.values(), key=lambda x: x.get("ts", ""), reverse=True):
             c = p.get("counts", {})
+            hist = p.get("history") or p.get("growth") or p.get("root")
             rows.append(
                 f'| [[{base.name}/{p["root"][:-3]}|{p["title"]}]] | {cell(p.get("current"), 50) or "—"} '
                 f'| {p.get("total", 0)} | {c.get("done", 0)} | {c.get("partial", 0)} '
                 f'| {c.get("decide", 0)} | {c.get("blocked", 0)} '
-                f'| {p.get("ts", "")} | [[{base.name}/{p["growth"][:-3]}|生长]] |'
+                f'| {p.get("ts", "")} | [[{base.name}/{hist[:-3]}|演进]] |'
             )
         body = self.fm("task-index", "任务总览", ["任务树", "总览"])
         body += f"""# 任务总览
 
 > 每跑一次任一任务的生成器，本页自动更新。按最近生成时间倒序。
 
-| 任务 | 当前只做 | 节点 | 已定 | 推进中 | 待拍板 | 受阻 | 最近生成 | 生长 |
+| 任务 | 当前只做 | 节点 | 已定 | 推进中 | 待拍板 | 受阻 | 最近生成 | 演进 |
 |---|---|---|---|---|---|---|---|---|
 {chr(10).join(rows)}
 
-> 点任务进根页，点「生长」看这一轮动了什么、谁在做什么。
+> 点任务进根页，点「演进」看校准、拍板与过程日志。
 """
         page = base / "任务总览.md"
         if page.exists():
@@ -902,6 +836,12 @@ class Tree:
             if "generator: task-tree skill" in head:
                 p.chmod(0o644)
                 p.unlink()
+        for d in sorted((x for x in self.out.rglob("*") if x.is_dir()),
+                        key=lambda x: len(x.parts), reverse=True):
+            try:
+                d.rmdir()
+            except OSError:
+                pass
 
 
 def configure_stdio():
@@ -964,7 +904,7 @@ def main():
         history.append(cur)
     history = history[-120:]
 
-    tree = Tree(cfg, vault, dry=args.dry, history=history, diff=diff, history_path=hist_path)
+    tree = Tree(cfg, vault, dry=args.dry, history=history, diff=diff)
     tree.render()
     if not args.dry:
         atomic_write(hist_path, json.dumps({"snapshots": history}, ensure_ascii=False, indent=1))
