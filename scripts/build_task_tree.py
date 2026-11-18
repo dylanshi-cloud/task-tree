@@ -904,7 +904,17 @@ class Tree:
                 p.unlink()
 
 
+def configure_stdio():
+    for stream in (sys.stdout, sys.stderr):
+        if hasattr(stream, "reconfigure"):
+            try:
+                stream.reconfigure(encoding="utf-8", errors="replace")
+            except (AttributeError, ValueError):
+                pass
+
+
 def main():
+    configure_stdio()
     ap = argparse.ArgumentParser(description="渲染任务树到 Obsidian")
     ap.add_argument("--tree", default=".task-tree/tree.json", help="tree.json 路径")
     ap.add_argument("--vault", default=None, help="Obsidian 库根目录")

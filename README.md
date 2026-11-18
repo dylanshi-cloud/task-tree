@@ -58,7 +58,7 @@ git clone https://github.com/dylanshi-cloud/task-tree.git ~/.claude/skills/task-
 
 Or copy the folder into `~/.claude/skills/task-tree/` (`%USERPROFILE%\.claude\skills\task-tree\` on Windows).
 
-Requirements: Python 3.9+ (stdlib only), Obsidian for the rendered view, macOS/Windows/Linux.
+Requirements: Python 3.10+ (stdlib only), Obsidian for the rendered view, macOS/Windows/Linux.
 
 ### Point it at a vault
 
@@ -148,7 +148,7 @@ See [SECURITY.md](SECURITY.md) for reporting.
 python3 -m unittest discover -s tests -v
 ```
 
-CI runs the suite on Linux, macOS, and Windows across Python 3.9–3.12.
+CI runs the suite on Linux, macOS, and Windows across Python 3.10–3.12.
 
 ## Repository layout
 

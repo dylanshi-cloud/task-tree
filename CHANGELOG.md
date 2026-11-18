@@ -23,6 +23,8 @@ and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 ### Fixed
 
 - Obsidian canvas links kept the `.canvas` extension and silently failed to switch tabs; URIs now omit `.md` and `.canvas`.
+- Windows consoles could crash on Chinese status output when stdout was redirected; the generator now forces UTF-8.
+- CI now targets Python 3.10–3.12, since `ubuntu-latest` no longer ships 3.9.
 
 ### Known gaps
 

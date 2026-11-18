@@ -18,7 +18,7 @@ def run(tree, vault, history, *extra):
     return subprocess.run(
         [sys.executable, "-I", str(SCRIPT), "--tree", str(tree),
          "--vault", str(vault), "--history", str(history), "--no-open", *extra],
-        capture_output=True, text=True,
+        capture_output=True, encoding="utf-8", errors="replace",
     )
 
 
