@@ -166,7 +166,7 @@ evals/                   # realistic prompts for skill evaluation
 
 ## Status
 
-v0.1.0 — core loop and release scaffolding are complete; the plugin and
+v0.1.1 — core loop and release scaffolding are complete; the plugin and
 marketplace manifests pass `claude plugin validate`. Known gaps: English UI
 strings, demo screenshots/GIF, and the first public repository push. See
 [CHANGELOG.md](CHANGELOG.md).

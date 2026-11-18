@@ -3,6 +3,14 @@
 All notable changes follow [Keep a Changelog](https://keepachangelog.com/en/1.1.0/)
 and [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.1.1] — 2026-11-18
+
+### Fixed
+
+- Windows consoles could crash on Chinese status output when stdout was redirected; the generator now forces UTF-8.
+- Wiki-link integrity test compared backslash paths against forward-slash links on Windows; it now compares POSIX paths.
+- CI targets Python 3.10–3.12, since `ubuntu-latest` no longer ships 3.9.
+
 ## [0.1.0] — 2026-11-18
 
 ### Added
