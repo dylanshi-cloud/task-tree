@@ -1,0 +1,26 @@
+{
+  "skill_name": "task-tree",
+  "evals": [
+    {
+      "id": 1,
+      "name": "full-product-launch",
+      "prompt": "We're launching a paid analytics add-on next quarter. Build the full plan: positioning, pricing, onboarding, launch content, and success metrics.",
+      "expected_output": "Intent clarified before planning (why / who / success / non-goals), then a tree.json with 3-9 branches and nodes that each have judge and next, generated into the configured vault. Chat reply reports only changes, next step, and decisions needed.",
+      "files": []
+    },
+    {
+      "id": 2,
+      "name": "lightweight-small-task",
+      "prompt": "Write a one-page memo recommending whether we should migrate our docs from Notion to a static site.",
+      "expected_output": "A lightweight tree (1 branch, at most 3 nodes) rather than a full program tree; the memo is produced and the tree records the recommendation and what remains open.",
+      "files": []
+    },
+    {
+      "id": 3,
+      "name": "mid-task-goal-change",
+      "prompt": "Change of plan: the board cut the budget in half. Update the launch plan we've been working on.",
+      "expected_output": "The existing tree is updated, not replaced: a calibration entry with kind 范围 or 目标 records the old and new constraint, affected node states change, a snapshot is written, and the growth page shows what changed this round.",
+      "files": []
+    }
+  ]
+}

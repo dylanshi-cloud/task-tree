@@ -1,0 +1,21 @@
+{
+  "$schema": "https://anthropic.com/claude-code/plugin.schema.json",
+  "name": "task-tree",
+  "version": "0.1.0",
+  "description": "Traceable living task trees: clarify intent, split work into branches and nodes, and render a read-only Obsidian mirror with growth, collaboration, and calibration views.",
+  "author": {
+    "name": "Dylan Shi"
+  },
+  "license": "MIT",
+  "homepage": "https://github.com/dylanshi-cloud/task-tree",
+  "repository": "https://github.com/dylanshi-cloud/task-tree",
+  "keywords": [
+    "task-tree",
+    "planning",
+    "obsidian",
+    "workflow",
+    "growth",
+    "intent",
+    "living-document"
+  ]
+}

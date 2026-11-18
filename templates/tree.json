@@ -1,0 +1,174 @@
+{
+  "program": "example",
+  "title": "示例：个人网站上线",
+  "roles": [
+    { "who": "Claude", "does": "内容、实现、部署、校验与证据" },
+    { "who": "用户", "does": "拍板定位与取舍、提供账号素材、最终验收" }
+  ],
+  "mission": {
+    "why": "用一个网站让陌生人在 30 秒内看懂我做什么，并能联系到我。",
+    "source": "用户 2026-01-01 访谈",
+    "who": "潜在客户与招聘方，手机端为主。",
+    "who_source": "同上",
+    "who_secondary": "合作方与媒体是第二读者。",
+    "who_secondary_source": "用户补充",
+    "non_goals": [
+      "不做后台和会员系统",
+      "不做独立博客，等有 3 篇成稿再加",
+      "不追求视觉特效，先保证手机端打开快"
+    ],
+    "success": [
+      { "id": "S1", "text": "首屏 5 秒内说清定位", "nodes": ["A1"], "source": "用户原话" },
+      { "id": "S2", "text": "手机端 LCP < 2.5 s，能随时改文案", "nodes": ["B1"], "source": "建议暂定" },
+      { "id": "S3", "text": "上线一个月内收到 10 条有效联系", "nodes": ["C1"], "source": "用户原话" }
+    ]
+  },
+  "branches": {
+    "A": {
+      "name": "内容",
+      "why": "先把定位和信息结构定下来，避免一开始就做样式。",
+      "serves": ["S1"],
+      "quotes": ["先想清楚给谁看，再想好不好看。"]
+    },
+    "B": {
+      "name": "技术",
+      "why": "选最小可维护的实现：能上线、能改、不引入运维负担。",
+      "serves": ["S2"]
+    },
+    "C": {
+      "name": "增长",
+      "why": "上线不是终点；有反馈闭环才算完成。",
+      "serves": ["S3"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "A1",
+      "branch": "A",
+      "title": "定位与首屏文案",
+      "state": "done",
+      "judge": "陌生人看完首屏能用自己的话复述「你是谁、解决什么问题」。",
+      "next": "已定稿；文案变更走 D-01 的同一判据。",
+      "evidence": ["docs/positioning.md"],
+      "decision_ids": ["D-01"],
+      "lessons": ["先用一句话写出定位，再展开结构。"]
+    },
+    {
+      "id": "A2",
+      "branch": "A",
+      "title": "信息架构",
+      "state": "partial",
+      "judge": "手机端 3 次点击内到达联系方式。",
+      "next": "把案例页并入首屏下方，删掉独立「关于」。",
+      "evidence": ["docs/sitemap.md"],
+      "decision_ids": []
+    },
+    {
+      "id": "B1",
+      "branch": "B",
+      "title": "静态站实现",
+      "state": "partial",
+      "judge": "手机端 LCP < 2.5 s；改一段文案不需要碰构建配置。",
+      "next": "先做两页最小版本，再补案例。",
+      "evidence": ["site/"],
+      "decision_ids": ["D-02"]
+    },
+    {
+      "id": "B2",
+      "branch": "B",
+      "title": "域名与部署",
+      "state": "open",
+      "judge": "自有域名可访问，HTTPS 正常，推送即发布。",
+      "next": "选域名并接一键部署。",
+      "evidence": [],
+      "decision_ids": []
+    },
+    {
+      "id": "C1",
+      "branch": "C",
+      "title": "联系表单与统计",
+      "state": "open",
+      "judge": "表单能送达邮箱；能看到来源渠道与转化。",
+      "next": "先用邮件转发方案，不接复杂后端。",
+      "evidence": [],
+      "decision_ids": ["D-04"]
+    },
+    {
+      "id": "C2",
+      "branch": "C",
+      "title": "上线后复盘",
+      "state": "later",
+      "judge": "两周一次复盘：来源、有效联系数、下一步改什么。",
+      "next": "上线满两周再启动。",
+      "evidence": [],
+      "decision_ids": []
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D-01",
+      "date": "2026-01-02",
+      "title": "定位：面向潜在客户，主打可交付性",
+      "status": "approved",
+      "decision": "首屏只讲「做什么、做过什么、怎么联系」，不放个人履历长文。"
+    },
+    {
+      "id": "D-02",
+      "date": "2026-01-03",
+      "title": "技术选型：静态站 + 一键部署",
+      "status": "approved",
+      "decision": "不用 CMS，不做后台；文案改 Markdown。"
+    },
+    {
+      "id": "D-03",
+      "date": "2026-01-10",
+      "title": "受众扩展：加入招聘方",
+      "status": "approved",
+      "decision": "首屏加一行「目前开放 XX 方向机会」，其余不变。"
+    },
+    {
+      "id": "D-04",
+      "date": "2026-01-11",
+      "title": "是否做博客",
+      "status": "proposed",
+      "decision": "A 暂不做，等有 3 篇成稿再加；B 先留路由。"
+    }
+  ],
+  "calibrations": [
+    {
+      "date": "2026-01-10",
+      "kind": "目标",
+      "title": "受众从「潜在客户」扩展到「客户 + 招聘方」",
+      "from": "只服务潜在客户",
+      "to": "首屏兼顾招聘方，增加机会说明",
+      "decision": "D-03",
+      "why": "用户开始看机会；两类读者共用同一套可信度证据。"
+    },
+    {
+      "date": "2026-01-05",
+      "kind": "方案",
+      "title": "取消独立「关于」页",
+      "from": "关于页 + 案例页",
+      "to": "首屏下方合并",
+      "decision": "D-01",
+      "why": "减少一次点击，信息更集中。"
+    }
+  ],
+  "drift_checks": [
+    {
+      "topic": "部署方式",
+      "canonical": "静态站 + 一键部署（D-02）",
+      "stale_patterns": ["WordPress", "自建服务器"],
+      "files": []
+    }
+  ],
+  "drift_files": [],
+  "current": "B1 静态站实现：先做两页最小版本（判据：手机端 LCP < 2.5 s，改文案不碰构建配置）。",
+  "log": [
+    {
+      "date": "2026-01-03",
+      "title": "定位与首屏文案定稿",
+      "summary": "完成一句话定位和首屏三段式；案例页待补。"
+    }
+  ]
+}

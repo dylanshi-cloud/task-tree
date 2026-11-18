@@ -1,0 +1,91 @@
+{
+  "program": "newsletter-launch",
+  "title": "Newsletter Launch",
+  "roles": [
+    { "who": "Claude", "does": "Draft the plan, build the tree, write the first issue." },
+    { "who": "用户", "does": "Approve audience, cadence, and launch date." }
+  ],
+  "mission": {
+    "why": "A weekly newsletter that turns our research notes into a reusable audience channel.",
+    "source": "Founder note, 2026-11-18",
+    "who": "Product and engineering leads at small SaaS teams.",
+    "who_source": "Founder note",
+    "non_goals": [
+      "No paid acquisition before issue 4.",
+      "No daily cadence in the first quarter."
+    ],
+    "success": [
+      {
+        "id": "S1",
+        "text": "First issue ships to 50 subscribers and 40% open it.",
+        "nodes": ["audience", "draft"],
+        "source": "Founder note"
+      },
+      {
+        "id": "S2",
+        "text": "Publishing takes under 3 hours per issue.",
+        "nodes": ["schedule"],
+        "source": "Founder note"
+      }
+    ]
+  },
+  "branches": {
+    "launch": {
+      "name": "Launch",
+      "why": "Nothing else matters until one issue reaches real readers.",
+      "serves": ["S1", "S2"]
+    }
+  },
+  "nodes": [
+    {
+      "id": "audience",
+      "branch": "launch",
+      "title": "Confirm reader and topic",
+      "state": "done",
+      "owner": "Claude",
+      "judge": "One-sentence reader definition plus three candidate topics.",
+      "next": "Draft issue 1 against the chosen topic.",
+      "evidence": ["reader-brief.md"]
+    },
+    {
+      "id": "schedule",
+      "branch": "launch",
+      "title": "Pick launch date and cadence",
+      "state": "decide",
+      "owner": "用户",
+      "judge": "A date and a cadence the founder can hold for four issues.",
+      "next": "Founder approves; Claude adds dates to the plan.",
+      "evidence": []
+    },
+    {
+      "id": "draft",
+      "branch": "launch",
+      "title": "Write issue 1",
+      "state": "open",
+      "owner": "Claude",
+      "judge": "A complete draft with subject line, body, and one call to action.",
+      "next": "Wait for the launch date, then draft.",
+      "evidence": []
+    }
+  ],
+  "decisions": [
+    {
+      "id": "D1",
+      "date": "2026-11-18",
+      "title": "Reader definition approved",
+      "status": "approved",
+      "decision": "Product and engineering leads at small SaaS teams."
+    }
+  ],
+  "calibrations": [
+    {
+      "date": "2026-11-18",
+      "kind": "范围",
+      "title": "Dropped paid acquisition from v1",
+      "from": "Launch plan includes paid ads",
+      "to": "Organic only until issue 4",
+      "why": "Founder wants proof of content quality first."
+    }
+  ],
+  "drift_checks": []
+}

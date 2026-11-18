@@ -1,0 +1,16 @@
+{
+  "$schema": "https://anthropic.com/claude-code/marketplace.schema.json",
+  "name": "task-tree-marketplace",
+  "description": "Traceable living task trees for Claude Code.",
+  "owner": {
+    "name": "Dylan Shi"
+  },
+  "plugins": [
+    {
+      "name": "task-tree",
+      "description": "Clarify intent, split work into a tree, and keep a visible growth and collaboration trail in Obsidian.",
+      "source": "./",
+      "category": "productivity"
+    }
+  ]
+}
